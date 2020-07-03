@@ -12,6 +12,7 @@ class ViewController: UITableViewController {
     var petitions = [Petition]()
     var filteredPetitions = [Petition]()
     var urlString: String = ""
+    var textFieldText: String = ""
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -62,43 +63,6 @@ class ViewController: UITableViewController {
         present(ac, animated: true)
     }
     
-    //    override func viewDidLoad() {
-    //        super.viewDidLoad()
-    //        navigationItem.leftBarButtonItem = UIBarButtonItem(title: "Credits", style: .plain, target: self, action: #selector(creditsTapped))
-    //
-    //        navigationItem.rightBarButtonItem = UIBarButtonItem(title: "Filter", style: .plain, target: self, action: #selector(filterTapped))
-    //
-    //        let urlString: String
-    //
-    //        if navigationController?.tabBarItem.tag == 0 {
-    //            urlString = "https://api.whitehouse.gov/v1/petitions.json?limit=100"
-    //        } else {
-    //            urlString = "https://api.whitehouse.gov/v1/petitions.json?signatureCountFloor=10000&limit=100"
-    //        }
-    //
-    //        DispatchQueue.global(qos: .userInitiated).async {
-    //            if let url = URL(string: urlString) {
-    //                if let data = try? Data(contentsOf: url) {
-    //                    self.parse(json: data)
-    //                    return
-    //                }
-    //            }
-    //
-    //            self.showError()
-    //        }
-    //    }
-    
-    //    func parse(json: Data) {
-    //        let decoder = JSONDecoder()
-    //
-    //        if let jsonPetitions = try? decoder.decode(Petitions.self, from: json) {
-    //            petitions = jsonPetitions.results
-    //            filteredPetitions = jsonPetitions.results
-    //            DispatchQueue.main.async {
-    //                self.tableView.reloadData()
-    //            }
-    //        }
-    //    }
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return filteredPetitions.count
@@ -120,30 +84,25 @@ class ViewController: UITableViewController {
         navigationController?.pushViewController(vc, animated: true)
     }
     
-    //    func showError() {
-    //        DispatchQueue.main.async {
-    //             let ac = UIAlertController(title: "Loading error", message: "There was a problem loading the feed; please check your connection and try again.", preferredStyle: .alert)
-    //             ac.addAction(UIAlertAction(title: "OK", style: .default))
-    //            self.present(ac, animated: true)
-    //        }
-    //    }
     
     func search(for text: String) {
-        print(text)
         
         let searchQueryString = text.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
         if searchQueryString.count != 0 {
-            print("inside", searchQueryString.count)
             filteredPetitions = petitions.filter{ petition in
                 return petition.title.lowercased().contains(searchQueryString)
             }
-            print(filteredPetitions)
-            tableView.reloadData()
+            
+            DispatchQueue.main.async {
+                self.tableView.reloadData()
+            }
             return
         }
         
         filteredPetitions = petitions
-        tableView.reloadData()
+        DispatchQueue.main.async {
+            self.tableView.reloadData()
+        }
     }
     
     @objc func creditsTapped() {
@@ -154,11 +113,17 @@ class ViewController: UITableViewController {
     
     @objc func filterTapped() {
         let ac = UIAlertController(title: "Filter List", message: nil, preferredStyle: .alert)
-        ac.addTextField()
+        ac.addTextField { (textField) in
+            textField.text = self.textFieldText
+        }
         
         let submitAction = UIAlertAction(title: "Submit", style: .default) { [weak self, weak ac] action in
             guard let searchText = ac?.textFields?[0].text else { return }
-            self?.search(for: searchText)
+            self?.textFieldText = searchText
+            
+            DispatchQueue.global().async {
+                self?.search(for: searchText)
+            }
         }
         
         ac.addAction(submitAction)
